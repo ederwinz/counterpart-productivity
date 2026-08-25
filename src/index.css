@@ -1,0 +1,218 @@
+@import "tailwindcss";
+
+@import "@fontsource/schibsted-grotesk/500.css";
+@import "@fontsource/schibsted-grotesk/600.css";
+@import "@fontsource/schibsted-grotesk/700.css";
+@import "@fontsource/work-sans/300.css";
+@import "@fontsource/work-sans/400.css";
+@import "@fontsource/work-sans/500.css";
+@import "@fontsource/work-sans/300-italic.css";
+@import "@fontsource/work-sans/400-italic.css";
+@import "@fontsource/work-sans/500-italic.css";
+@import "@fontsource/fragment-mono/400.css";
+
+/*
+ * "Marginalia" design tokens. Three layers: primitive (raw palette) -> semantic (purpose)
+ * -> component (shape/shadow). No light/dark toggle: "stage" (dark inset plate, used for
+ * the Focus Mode countdown) and "paper" (everyday light surface) are two permanent
+ * registers that coexist rather than swap.
+ */
+:root {
+  /* Layer 1: primitive */
+  --color-paper-50: #f6f2e8;
+  --color-paper-100: #ece4d2;
+  --color-paper-300: #d6c9ac;
+
+  --color-ink-950: #1c1a15;
+  --color-ink-700: #3c372c;
+  --color-ink-500: #6d6553;
+
+  --color-moss-500: #587a52;
+  --color-moss-700: #33512e;
+  --color-moss-900: #1f331c;
+
+  --color-bronze-400: #b3874f;
+  --color-bronze-600: #8a6836;
+
+  --color-teal-500: #4f7d78;
+  --color-teal-400: #6fa39d;
+
+  --color-brick-600: #8c4433;
+
+  /* Layer 2: semantic */
+  --background: var(--color-paper-50);
+  --foreground: var(--color-ink-950);
+
+  --card: var(--color-paper-100);
+  --card-foreground: var(--color-ink-950);
+
+  --popover: var(--color-paper-100);
+  --popover-foreground: var(--color-ink-950);
+
+  --primary: var(--color-moss-500);
+  --primary-hover: var(--color-moss-700);
+  --primary-foreground: var(--color-paper-50);
+
+  --secondary: var(--color-bronze-400);
+  --secondary-hover: var(--color-bronze-600);
+  --secondary-foreground: var(--color-ink-950);
+
+  --muted: var(--color-paper-300);
+  --muted-foreground: var(--color-ink-500);
+
+  --accent: var(--color-teal-500);
+  --accent-hover: var(--color-teal-400);
+  --accent-foreground: var(--color-paper-50);
+
+  --destructive: var(--color-brick-600);
+  --destructive-foreground: var(--color-paper-50);
+
+  --border: var(--color-ink-950);
+  --input: var(--color-ink-950);
+  --ring: var(--color-teal-500);
+
+  /* Stage surface: permanent dark "inset plate" register, scoped to Focus Mode */
+  --surface-stage: var(--color-moss-900);
+  --surface-stage-foreground: var(--color-paper-50);
+  --surface-stage-border: var(--color-bronze-400);
+
+  /* Layer 3: component (shape + shadow) */
+  --radius-panel: 10px;
+  --radius-pill: 999px;
+
+  --border-width-hairline: 1px;
+
+  --shadow-relief-sm: 0 1px 2px rgba(28, 26, 21, 0.08);
+  --shadow-relief-md: 0 12px 32px -12px rgba(28, 26, 21, 0.32);
+
+  --font-display: "Schibsted Grotesk", sans-serif;
+  --font-body: "Work Sans", sans-serif;
+  --font-label: "Fragment Mono", monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface-stage: var(--surface-stage);
+  --color-surface-stage-foreground: var(--surface-stage-foreground);
+  --color-surface-stage-border: var(--surface-stage-border);
+
+  --color-paper-50: var(--color-paper-50);
+  --color-paper-100: var(--color-paper-100);
+  --color-paper-300: var(--color-paper-300);
+  --color-ink-950: var(--color-ink-950);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-500: var(--color-ink-500);
+  --color-moss-500: var(--color-moss-500);
+  --color-moss-700: var(--color-moss-700);
+  --color-moss-900: var(--color-moss-900);
+  --color-bronze-400: var(--color-bronze-400);
+  --color-bronze-600: var(--color-bronze-600);
+  --color-teal-500: var(--color-teal-500);
+  --color-teal-400: var(--color-teal-400);
+  --color-brick-600: var(--color-brick-600);
+
+  --font-display: var(--font-display);
+  --font-heading: var(--font-display);
+  --font-body: var(--font-body);
+  --font-label: var(--font-label);
+
+  --radius-panel: var(--radius-panel);
+  --radius-pill: var(--radius-pill);
+  --radius-sm: var(--radius-panel);
+  --radius-md: var(--radius-panel);
+  --radius-lg: var(--radius-panel);
+  --radius-xl: var(--radius-panel);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    margin: 0;
+    @apply bg-background text-foreground font-body antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display uppercase tracking-wide;
+  }
+}
+
+@layer utilities {
+  .shadow-relief-sm {
+    box-shadow: var(--shadow-relief-sm);
+  }
+  .shadow-relief-md {
+    box-shadow: var(--shadow-relief-md);
+  }
+
+  .font-label {
+    letter-spacing: 0.12em;
+  }
+
+  .animate-select-in {
+    animation: select-in 120ms ease-out;
+  }
+  .animate-select-out {
+    animation: select-out 100ms ease-in;
+  }
+}
+
+@keyframes select-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes select-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-select-in,
+  .animate-select-out {
+    animation: none;
+  }
+}

@@ -1,0 +1,93 @@
+mod commands;
+mod db;
+mod hosts;
+mod presets;
+mod scheduler;
+
+use db::Db;
+use std::sync::Mutex;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{Manager, WindowEvent};
+use tauri_plugin_notification::{NotificationExt, PermissionState};
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
+        .setup(|app| {
+            let app_data_dir = app.path().app_data_dir()?;
+            let conn = db::init(app_data_dir);
+            app.manage(Db(Mutex::new(conn)));
+
+            if app.notification().permission_state()? == PermissionState::Prompt {
+                app.notification().request_permission()?;
+            }
+
+            let show_item = MenuItem::with_id(app, "show", "Schedule a task…", true, None::<&str>)?;
+            let dashboard_item =
+                MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &dashboard_item, &quit_item])?;
+
+            TrayIconBuilder::with_id("main")
+                .icon(tauri::image::Image::from_bytes(include_bytes!(
+                    "../icons/32x32.png"
+                ))?)
+                .menu(&menu)
+                .show_menu_on_left_click(true)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "dashboard" => {
+                        let _ = commands::open_dashboard(app.clone());
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .build(app)?;
+
+            scheduler::reconcile(app.handle());
+            scheduler::spawn(app.handle().clone());
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                window.hide().ok();
+                api.prevent_close();
+            }
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::create_task,
+            commands::list_tasks,
+            commands::delete_task,
+            commands::update_task_status,
+            commands::list_focus_tasks,
+            commands::create_focus_task,
+            commands::archive_focus_task,
+            commands::list_blocked_sites,
+            commands::add_blocked_site,
+            commands::remove_blocked_site,
+            commands::check_hosts_permission,
+            commands::grant_hosts_permission,
+            commands::open_dashboard,
+            commands::list_presets,
+            commands::start_preset_session,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
