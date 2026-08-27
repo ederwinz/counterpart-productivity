@@ -40,6 +40,14 @@ export interface BlockedSite {
   created_at: string;
 }
 
+export interface CustomPreset {
+  id: number;
+  label: string;
+  work_minutes: number;
+  break_minutes: number;
+  created_at: string;
+}
+
 export function listTasks(): Promise<Task[]> {
   return invoke("list_tasks");
 }
@@ -113,6 +121,36 @@ export function startPresetSession(
 ): Promise<Task> {
   return invoke("start_preset_session", {
     presetKey,
+    title,
+    focusTaskId,
+  });
+}
+
+export function listCustomPresets(): Promise<CustomPreset[]> {
+  return invoke("list_custom_presets");
+}
+
+export function createCustomPreset(
+  label: string,
+  workMinutes: number,
+  breakMinutes: number,
+): Promise<CustomPreset> {
+  return invoke("create_custom_preset", { label, workMinutes, breakMinutes });
+}
+
+export function deleteCustomPreset(id: number): Promise<void> {
+  return invoke("delete_custom_preset", { id });
+}
+
+export function startCustomSession(
+  workMinutes: number,
+  breakMinutes: number,
+  title: string,
+  focusTaskId: number | null = null,
+): Promise<Task> {
+  return invoke("start_custom_session", {
+    workMinutes,
+    breakMinutes,
     title,
     focusTaskId,
   });

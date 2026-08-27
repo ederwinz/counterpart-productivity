@@ -15,10 +15,7 @@ use tauri_plugin_notification::{NotificationExt, PermissionState};
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
+            commands::smart_open(app);
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
@@ -31,11 +28,10 @@ pub fn run() {
                 app.notification().request_permission()?;
             }
 
-            let show_item = MenuItem::with_id(app, "show", "Schedule a task…", true, None::<&str>)?;
             let dashboard_item =
                 MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_item, &dashboard_item, &quit_item])?;
+            let menu = Menu::with_items(app, &[&dashboard_item, &quit_item])?;
 
             TrayIconBuilder::with_id("main")
                 .icon(tauri::image::Image::from_bytes(include_bytes!(
@@ -44,14 +40,13 @@ pub fn run() {
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
                     "dashboard" => {
-                        let _ = commands::open_dashboard(app.clone());
+                        // Context-aware: shows the live countdown popover if a session
+                        // is running, otherwise opens the Dashboard. macOS always shows
+                        // the attached tray menu on click (show_menu_on_left_click has
+                        // no effect once a menu is set), so this menu item is the only
+                        // entry point — it has to do the right thing either way.
+                        commands::smart_open(app);
                     }
                     "quit" => {
                         app.exit(0);
@@ -87,6 +82,10 @@ pub fn run() {
             commands::open_dashboard,
             commands::list_presets,
             commands::start_preset_session,
+            commands::list_custom_presets,
+            commands::create_custom_preset,
+            commands::delete_custom_preset,
+            commands::start_custom_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

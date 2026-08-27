@@ -17,6 +17,7 @@ import {
 import GoalCard from "../components/GoalCard";
 import BlockedSitesPanel from "../components/BlockedSitesPanel";
 import TaskForm from "../components/TaskForm";
+import TaskList from "../components/TaskList";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -90,6 +91,9 @@ export default function Dashboard() {
           <Card>
             <TaskForm goals={goals} onCreated={refresh} />
           </Card>
+          <div className="mt-4">
+            <TaskList tasks={tasks} onChanged={refresh} />
+          </div>
         </section>
 
         <section>

@@ -14,11 +14,11 @@ Most focus-timer apps make you babysit them: start the timer, remember to switch
 
 ## Features
 
-- **Three ways to start a session** — instantly ("Now"), from a study-technique preset (Pomodoro 25/5, 52/17, 90-minute focus blocks, and more), or scheduled for later with a title, goal, and duration.
-- **Auto-cycling presets** — pick a technique and the app chains work → break → work rounds back-to-back on its own, tracking round number and inserting long breaks on schedule.
+- **Three ways to start a session** — instantly ("Now"), from a preset (Pomodoro 25/5, 52/17, 90-minute focus blocks, and more), or scheduled for later with a title, goal, and duration.
+- **Auto-cycling presets, built-in or your own** — pick a study technique and the app chains work → break → work rounds back-to-back on its own, tracking round number and inserting long breaks on schedule. Don't like the built-in ratios? Save your own custom work/rest split once and it shows up as a reusable preset from then on.
 - **Site blocking during focus sessions** — actively blocks configured distracting sites while a work session is running, and automatically un-blocks the moment a break starts or the session ends.
 - **Recurring goals with streaks** — tag sessions against a goal (e.g. "Deep Work, 120 min/day") and track daily progress, a 7-day trend, and streaks, computed live from completed sessions.
-- **Lives in the menu bar** — a compact popover for quick scheduling plus a full dashboard window for goals and site management; both stay in sync in real time via app-wide events.
+- **Lives in the menu bar** — a single dashboard window is the one place to schedule sessions, manage goals, and configure blocked sites; the tray icon itself is context-aware, popping open a compact live-countdown view when a session is running and the full dashboard otherwise.
 - **Crash-safe blocking state** — reconciles site-blocking against the database on every app launch, so a force-quit or crash mid-session can never leave sites blocked (or unblocked) incorrectly.
 
 ## Screenshots
@@ -41,7 +41,8 @@ Most focus-timer apps make you babysit them: start the timer, remember to switch
 ## Architecture highlights
 
 - **Single async scheduler loop** (`scheduler.rs`) ticks every second, transitioning tasks through their lifecycle, firing OS notifications, updating the live tray-icon countdown, and toggling site blocking — all from one source of truth instead of scattering timers across the UI.
-- **Two windows, one React app** — the menu-bar popover and the full dashboard are the same codebase rendering different views based on window identity, kept in sync across windows via Tauri's event system rather than a shared process.
+- **Two windows, one React app** — a full dashboard for scheduling and management, and a small popover that exists purely to show the live countdown while a session is active. Both render from the same codebase based on window identity, kept in sync across windows via Tauri's event system rather than a shared process. Clicking the tray icon is context-aware: it shows the countdown popover if a session is running, or opens the dashboard otherwise.
+- **Auto-cycling presets are DB-driven, not catalog-driven** — the scheduler chains the next work/break round purely from columns already stored on the task row, never re-reading the preset catalog at chain time. That means a user-defined custom preset auto-cycles through exactly the same code path as a built-in one, with no special-casing.
 - **Site blocking via `/etc/hosts`** — redirects blocked domains to localhost inside clearly-marked blocks, with a one-time permission grant so no repeated OS prompts interrupt a session.
 - **Three-layer design token system** — a custom "Marginalia" visual identity (self-hosted fonts, a paper/ink color system, a distinct dark "stage" mode for active sessions) built on Tailwind's token layer rather than default component styling.
 

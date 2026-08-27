@@ -42,6 +42,15 @@ pub struct BlockedSite {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomPreset {
+    pub id: i64,
+    pub label: String,
+    pub work_minutes: i64,
+    pub break_minutes: i64,
+    pub created_at: DateTime<Utc>,
+}
+
 pub fn init(app_data_dir: PathBuf) -> Connection {
     std::fs::create_dir_all(&app_data_dir).expect("failed to create app data dir");
     let db_path = app_data_dir.join("focus.sqlite");
@@ -117,6 +126,18 @@ pub fn init(app_data_dir: PathBuf) -> Connection {
     )
     .expect("failed to create blocked_sites table");
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS custom_presets (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            label         TEXT NOT NULL,
+            work_minutes  INTEGER NOT NULL,
+            break_minutes INTEGER NOT NULL,
+            created_at    TEXT NOT NULL
+        )",
+        [],
+    )
+    .expect("failed to create custom_presets table");
+
     conn
 }
 
@@ -159,6 +180,16 @@ pub fn row_to_blocked_site(row: &rusqlite::Row) -> rusqlite::Result<BlockedSite>
     })
 }
 
+pub fn row_to_custom_preset(row: &rusqlite::Row) -> rusqlite::Result<CustomPreset> {
+    Ok(CustomPreset {
+        id: row.get(0)?,
+        label: row.get(1)?,
+        work_minutes: row.get(2)?,
+        break_minutes: row.get(3)?,
+        created_at: row.get(4)?,
+    })
+}
+
 pub const SELECT_COLUMNS: &str = "id, title, scheduled_start, duration_minutes, status, created_at, focus_task_id, \
      is_break, cycle_preset, cycle_work_minutes, cycle_break_minutes, cycle_long_break_minutes, \
      cycle_rounds_before_long_break, cycle_round, cycle_base_title, cycle_focus_task_id";
@@ -172,9 +203,24 @@ pub fn active_work_task_count(conn: &Connection) -> i64 {
     .unwrap_or(0)
 }
 
+/// Whether any task (work or break) is currently active — used to decide whether
+/// clicking the tray icon should show the "main" popover (live countdown) or open
+/// the Dashboard instead.
+pub fn has_active_task(conn: &Connection) -> bool {
+    conn.query_row(
+        "SELECT COUNT(*) FROM tasks WHERE status = 'active'",
+        [],
+        |r| r.get::<_, i64>(0),
+    )
+    .unwrap_or(0)
+        > 0
+}
+
 pub const FOCUS_TASK_COLUMNS: &str = "id, name, daily_goal_minutes, archived, created_at";
 
 pub const BLOCKED_SITE_COLUMNS: &str = "id, domain, created_at";
+
+pub const CUSTOM_PRESET_COLUMNS: &str = "id, label, work_minutes, break_minutes, created_at";
 
 pub fn list_blocked_domains(conn: &Connection) -> Vec<String> {
     let mut stmt = match conn.prepare(&format!("SELECT {BLOCKED_SITE_COLUMNS} FROM blocked_sites"))
