@@ -46,6 +46,29 @@ Most focus-timer apps make you babysit them: start the timer, remember to switch
 - **Site blocking via `/etc/hosts`** — redirects blocked domains to localhost inside clearly-marked blocks, with a one-time permission grant so no repeated OS prompts interrupt a session.
 - **Three-layer design token system** — a custom "Marginalia" visual identity (self-hosted fonts, a paper/ink color system, a distinct dark "stage" mode for active sessions) built on Tailwind's token layer rather than default component styling.
 
+## Download
+
+Focus is in early beta. Grab the latest build from [GitHub Releases](https://github.com/ederwinz/counterpart-productivity/releases/latest):
+
+1. Download the `.dmg` (Apple Silicon Macs only for now).
+2. Open it and drag **Focus.app** into **Applications**.
+3. See **Gatekeeper bypass** below before you launch it the first time.
+
+This beta build is unsigned (no Apple Developer ID yet), so macOS's Gatekeeper will refuse to open it with a normal double-click. Once launched (see below), Focus runs as a completely normal app — the one-time bypass is only needed the first time.
+
+### Gatekeeper bypass
+
+macOS will say *"Focus can't be opened because it is from an unidentified developer."* To get past this (only needs doing once):
+
+- **Finder**: right-click (or Control-click) **Focus.app** → **Open** → confirm **Open** in the dialog that appears.
+- **Terminal**: `xattr -cr /Applications/Focus.app`, then launch normally.
+
+Proper code signing + notarization (which removes this warning entirely) is planned as a fast-follow.
+
+### Feedback
+
+Found a bug, or have a suggestion? Use the **Feedback** section in the app's dashboard to send a note directly — it's the fastest way to reach me during the beta.
+
 ## Running locally
 
 ```bash
