@@ -16,6 +16,7 @@ import {
 } from "../api";
 import GoalCard from "../components/GoalCard";
 import BlockedSitesPanel from "../components/BlockedSitesPanel";
+import FeedbackForm from "../components/FeedbackForm";
 import TaskForm from "../components/TaskForm";
 import TaskList from "../components/TaskList";
 import { Button } from "../components/ui/button";
@@ -138,6 +139,13 @@ export default function Dashboard() {
             onAdd={handleAddSite}
             onRemove={handleRemoveSite}
           />
+        </section>
+
+        <section>
+          <h2 className="font-label mb-3 text-xs uppercase text-muted-foreground">Feedback</h2>
+          <Card>
+            <FeedbackForm />
+          </Card>
         </section>
       </div>
     </div>
