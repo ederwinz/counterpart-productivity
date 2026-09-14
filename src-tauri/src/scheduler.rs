@@ -80,7 +80,9 @@ fn tick(app: &AppHandle) {
             .collect();
         let mut done = Vec::new();
         for task in &active {
-            let end = task.scheduled_start + Duration::minutes(task.duration_minutes);
+            let end = task.scheduled_start
+                + Duration::minutes(task.duration_minutes)
+                + Duration::seconds(task.paused_seconds_total);
             if now >= end {
                 conn.execute(
                     "UPDATE tasks SET status = 'completed' WHERE id = ?1",
@@ -190,7 +192,9 @@ fn update_tray(app: &AppHandle, db: &Db, now: chrono::DateTime<Utc>) {
     let active = {
         let conn = db.0.lock().expect("db lock poisoned");
         conn.query_row(
-            &format!("SELECT {SELECT_COLUMNS} FROM tasks WHERE status = 'active' LIMIT 1"),
+            &format!(
+                "SELECT {SELECT_COLUMNS} FROM tasks WHERE status IN ('active', 'paused') LIMIT 1"
+            ),
             [],
             row_to_task,
         )
@@ -203,11 +207,23 @@ fn update_tray(app: &AppHandle, db: &Db, now: chrono::DateTime<Utc>) {
 
     match active {
         Some(task) => {
-            let end = task.scheduled_start + Duration::minutes(task.duration_minutes);
-            let remaining = (end - now).num_seconds().max(0);
+            let end = task.scheduled_start
+                + Duration::minutes(task.duration_minutes)
+                + Duration::seconds(task.paused_seconds_total);
+            // While paused, freeze the display by measuring remaining time as of the
+            // pause instant rather than the real now — resume grows paused_seconds_total
+            // by exactly the elapsed pause, so `end` moves forward to match and the
+            // countdown continues from the same frozen value.
+            let reference = task.paused_at.unwrap_or(now);
+            let remaining = (end - reference).num_seconds().max(0);
             let mins = remaining / 60;
             let secs = remaining % 60;
-            let _ = tray.set_title(Some(format!("{mins:02}:{secs:02}")));
+            let label = if task.status == "paused" {
+                format!("{mins:02}:{secs:02} (paused)")
+            } else {
+                format!("{mins:02}:{secs:02}")
+            };
+            let _ = tray.set_title(Some(label));
         }
         None => {
             let _ = tray.set_title(Some(""));

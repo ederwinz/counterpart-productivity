@@ -24,6 +24,8 @@ pub struct Task {
     pub cycle_round: Option<i64>,
     pub cycle_base_title: Option<String>,
     pub cycle_focus_task_id: Option<i64>,
+    pub paused_at: Option<DateTime<Utc>>,
+    pub paused_seconds_total: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,6 +106,15 @@ pub fn init(app_data_dir: PathBuf) -> Connection {
     )
     .ok();
 
+    // Migration: pause/resume support.
+    conn.execute("ALTER TABLE tasks ADD COLUMN paused_at TEXT", [])
+        .ok();
+    conn.execute(
+        "ALTER TABLE tasks ADD COLUMN paused_seconds_total INTEGER NOT NULL DEFAULT 0",
+        [],
+    )
+    .ok();
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS focus_tasks (
             id                 INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -159,6 +170,8 @@ pub fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         cycle_round: row.get(13)?,
         cycle_base_title: row.get(14)?,
         cycle_focus_task_id: row.get(15)?,
+        paused_at: row.get(16)?,
+        paused_seconds_total: row.get(17)?,
     })
 }
 
@@ -192,23 +205,26 @@ pub fn row_to_custom_preset(row: &rusqlite::Row) -> rusqlite::Result<CustomPrese
 
 pub const SELECT_COLUMNS: &str = "id, title, scheduled_start, duration_minutes, status, created_at, focus_task_id, \
      is_break, cycle_preset, cycle_work_minutes, cycle_break_minutes, cycle_long_break_minutes, \
-     cycle_rounds_before_long_break, cycle_round, cycle_base_title, cycle_focus_task_id";
+     cycle_rounds_before_long_break, cycle_round, cycle_base_title, cycle_focus_task_id, \
+     paused_at, paused_seconds_total";
 
+/// A paused work session still counts as "blocking should be on" — stepping away
+/// mid-session must not reopen blocked sites.
 pub fn active_work_task_count(conn: &Connection) -> i64 {
     conn.query_row(
-        "SELECT COUNT(*) FROM tasks WHERE status = 'active' AND is_break = 0",
+        "SELECT COUNT(*) FROM tasks WHERE status IN ('active', 'paused') AND is_break = 0",
         [],
         |r| r.get(0),
     )
     .unwrap_or(0)
 }
 
-/// Whether any task (work or break) is currently active — used to decide whether
-/// clicking the tray icon should show the "main" popover (live countdown) or open
-/// the Dashboard instead.
+/// Whether any task (work or break) is currently active or paused — used to decide
+/// whether clicking the tray icon should show the "main" popover (live countdown)
+/// or open the Dashboard instead.
 pub fn has_active_task(conn: &Connection) -> bool {
     conn.query_row(
-        "SELECT COUNT(*) FROM tasks WHERE status = 'active'",
+        "SELECT COUNT(*) FROM tasks WHERE status IN ('active', 'paused')",
         [],
         |r| r.get::<_, i64>(0),
     )

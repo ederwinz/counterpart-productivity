@@ -71,6 +71,8 @@ pub fn run() {
             commands::list_tasks,
             commands::delete_task,
             commands::update_task_status,
+            commands::pause_task,
+            commands::resume_task,
             commands::list_focus_tasks,
             commands::create_focus_task,
             commands::archive_focus_task,

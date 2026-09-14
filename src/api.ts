@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export type TaskStatus = "pending" | "active" | "completed" | "skipped";
+export type TaskStatus = "pending" | "active" | "paused" | "completed" | "skipped";
 
 export interface Task {
   id: number;
@@ -14,6 +14,8 @@ export interface Task {
   cycle_preset: string | null;
   cycle_round: number | null;
   cycle_rounds_before_long_break: number | null;
+  paused_at: string | null;
+  paused_seconds_total: number;
 }
 
 export interface PresetDef {
@@ -72,6 +74,14 @@ export function deleteTask(id: number): Promise<void> {
 
 export function updateTaskStatus(id: number, status: TaskStatus): Promise<void> {
   return invoke("update_task_status", { id, status });
+}
+
+export function pauseTask(id: number): Promise<void> {
+  return invoke("pause_task", { id });
+}
+
+export function resumeTask(id: number): Promise<void> {
+  return invoke("resume_task", { id });
 }
 
 export function listFocusTasks(): Promise<FocusTask[]> {

@@ -19,6 +19,7 @@ import BlockedSitesPanel from "../components/BlockedSitesPanel";
 import FeedbackForm from "../components/FeedbackForm";
 import TaskForm from "../components/TaskForm";
 import TaskList from "../components/TaskList";
+import TodaySummary from "../components/TodaySummary";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -46,10 +47,12 @@ export default function Dashboard() {
     const unlistenCreated = listen("task-created", refresh);
     const unlistenStarted = listen("task-started", refresh);
     const unlistenCompleted = listen("task-completed", refresh);
+    const unlistenUpdated = listen("task-updated", refresh);
     return () => {
       unlistenCreated.then((f) => f());
       unlistenStarted.then((f) => f());
       unlistenCompleted.then((f) => f());
+      unlistenUpdated.then((f) => f());
     };
   }, [refresh]);
 
@@ -86,6 +89,10 @@ export default function Dashboard() {
             Track daily progress on your goals and manage focus-mode site blocking.
           </p>
         </header>
+
+        <section>
+          <TodaySummary tasks={tasks} goals={goals} byGoal={byGoal} />
+        </section>
 
         <section>
           <h2 className="font-label mb-3 text-xs uppercase text-muted-foreground">Schedule</h2>

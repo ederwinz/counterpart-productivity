@@ -226,6 +226,57 @@ pub fn update_task_status(db: State<Db>, id: i64, status: String) -> Result<(), 
     Ok(())
 }
 
+/// Pauses an active session. Site-blocking is untouched — active_work_task_count()
+/// counts 'paused' rows too, so a pause never reopens blocked sites.
+#[tauri::command]
+pub fn pause_task(app: AppHandle, db: State<Db>, id: i64) -> Result<(), String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    let now = Utc::now();
+    let updated = conn
+        .execute(
+            "UPDATE tasks SET status = 'paused', paused_at = ?1 WHERE id = ?2 AND status = 'active'",
+            rusqlite::params![now, id],
+        )
+        .map_err(|e| e.to_string())?;
+    if updated > 0 {
+        let _ = app.emit("task-updated", id);
+    }
+    Ok(())
+}
+
+/// Resumes a paused session. The elapsed pause duration is folded into
+/// paused_seconds_total so the session's total worked time (and its eventual
+/// completion time) is pushed back by exactly how long it was paused.
+#[tauri::command]
+pub fn resume_task(app: AppHandle, db: State<Db>, id: i64) -> Result<(), String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    let now = Utc::now();
+    let task = conn
+        .query_row(
+            &format!("SELECT {SELECT_COLUMNS} FROM tasks WHERE id = ?1"),
+            rusqlite::params![id],
+            row_to_task,
+        )
+        .map_err(|e| e.to_string())?;
+
+    if task.status != "paused" {
+        return Ok(());
+    }
+    let Some(paused_at) = task.paused_at else {
+        return Ok(());
+    };
+    let elapsed = (now - paused_at).num_seconds().max(0);
+    let new_total = task.paused_seconds_total + elapsed;
+
+    conn.execute(
+        "UPDATE tasks SET status = 'active', paused_at = NULL, paused_seconds_total = ?1 WHERE id = ?2",
+        rusqlite::params![new_total, id],
+    )
+    .map_err(|e| e.to_string())?;
+    let _ = app.emit("task-updated", id);
+    Ok(())
+}
+
 #[tauri::command]
 pub fn list_focus_tasks(db: State<Db>) -> Result<Vec<FocusTask>, String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;

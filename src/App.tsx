@@ -17,15 +17,17 @@ export default function App() {
     const unlistenCreated = listen("task-created", refresh);
     const unlistenStarted = listen("task-started", refresh);
     const unlistenCompleted = listen("task-completed", refresh);
+    const unlistenUpdated = listen("task-updated", refresh);
     return () => {
       unlistenCreated.then((f) => f());
       unlistenStarted.then((f) => f());
       unlistenCompleted.then((f) => f());
+      unlistenUpdated.then((f) => f());
     };
   }, [refresh]);
 
   const isDashboard = getCurrentWindow().label === "dashboard";
-  const active = tasks.find((t) => t.status === "active");
+  const active = tasks.find((t) => t.status === "active" || t.status === "paused");
 
   // The "main" popover only ever shows the live countdown. Once a session ends
   // while it's on screen, there's nothing left for it to show — hide it rather
