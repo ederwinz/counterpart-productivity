@@ -1,4 +1,4 @@
-use crate::db::{active_work_task_count, list_blocked_domains, row_to_task, Db, SELECT_COLUMNS};
+use crate::db::{active_work_task_count, effective_block_domains, row_to_task, Db, SELECT_COLUMNS};
 use crate::hosts;
 use chrono::{Duration, Utc};
 use tauri::{AppHandle, Emitter, Manager};
@@ -15,7 +15,7 @@ pub fn reconcile(app: &AppHandle) {
     let db = app.state::<Db>();
     let conn = db.0.lock().expect("db lock poisoned");
     if active_work_task_count(&conn) > 0 {
-        hosts::apply_block(&list_blocked_domains(&conn));
+        hosts::apply_block(&effective_block_domains(&conn));
     } else {
         hosts::clear_block();
     }
@@ -58,10 +58,20 @@ fn tick(app: &AppHandle) {
     };
 
     for task in &started {
+        let round_suffix = task
+            .cycle_preset
+            .as_ref()
+            .and_then(|_| task.cycle_round)
+            .map(|round| format!(" — Round {round}"))
+            .unwrap_or_default();
         if task.is_break {
-            notify(app, "Break time", &task.title);
+            notify(app, "Break time", &format!("{}{round_suffix}", task.title));
         } else {
-            notify(app, "Focus session started", &task.title);
+            notify(
+                app,
+                "Focus session started",
+                &format!("{}{round_suffix}", task.title),
+            );
         }
         let _ = app.emit("task-started", task.id);
     }
@@ -103,14 +113,18 @@ fn tick(app: &AppHandle) {
     {
         let conn = db.0.lock().expect("db lock poisoned");
         if active_work_task_count(&conn) > 0 {
-            hosts::apply_block(&list_blocked_domains(&conn));
+            hosts::apply_block(&effective_block_domains(&conn));
         } else {
             hosts::clear_block();
         }
     }
 
     for task in &completed {
-        notify(app, "Focus session complete", &task.title);
+        if task.is_break {
+            notify(app, "Break's over", &task.title);
+        } else {
+            notify(app, "Focus session complete", &task.title);
+        }
         let _ = app.emit("task-completed", task.id);
     }
 
@@ -180,12 +194,9 @@ fn chain_next(conn: &rusqlite::Connection, task: &crate::db::Task, now: chrono::
 }
 
 fn notify(app: &AppHandle, title: &str, body: &str) {
-    let _ = app
-        .notification()
-        .builder()
-        .title(title)
-        .body(body)
-        .show();
+    if let Err(err) = app.notification().builder().title(title).body(body).show() {
+        eprintln!("notification failed ({title}): {err}");
+    }
 }
 
 fn update_tray(app: &AppHandle, db: &Db, now: chrono::DateTime<Utc>) {

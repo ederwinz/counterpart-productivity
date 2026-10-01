@@ -1,7 +1,8 @@
 use crate::db::{
-    active_work_task_count, has_active_task, list_blocked_domains, row_to_blocked_site,
-    row_to_custom_preset, row_to_focus_task, row_to_task, BlockedSite, CustomPreset, Db,
-    FocusTask, Task, BLOCKED_SITE_COLUMNS, CUSTOM_PRESET_COLUMNS, FOCUS_TASK_COLUMNS,
+    active_work_task_count, effective_block_domains, get_blocking_mode, has_active_task,
+    row_to_allowed_site, row_to_blocked_site, row_to_custom_preset, row_to_focus_task,
+    row_to_task, set_blocking_mode, AllowedSite, BlockedSite, CustomPreset, Db, FocusTask, Task,
+    ALLOWED_SITE_COLUMNS, BLOCKED_SITE_COLUMNS, CUSTOM_PRESET_COLUMNS, FOCUS_TASK_COLUMNS,
     SELECT_COLUMNS,
 };
 use crate::hosts;
@@ -374,7 +375,7 @@ pub fn add_blocked_site(db: State<Db>, domain: String) -> Result<BlockedSite, St
         .map_err(|e| e.to_string())?;
 
     if active_work_task_count(&conn) > 0 {
-        hosts::apply_block(&list_blocked_domains(&conn));
+        hosts::apply_block(&effective_block_domains(&conn));
     }
     Ok(site)
 }
@@ -389,7 +390,7 @@ pub fn remove_blocked_site(db: State<Db>, id: i64) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     if active_work_task_count(&conn) > 0 {
-        hosts::apply_block(&list_blocked_domains(&conn));
+        hosts::apply_block(&effective_block_domains(&conn));
     }
     Ok(())
 }
@@ -402,6 +403,91 @@ pub fn check_hosts_permission() -> bool {
 #[tauri::command]
 pub fn grant_hosts_permission() -> Result<(), String> {
     hosts::grant_permission()
+}
+
+#[tauri::command]
+pub fn list_allowed_sites(db: State<Db>) -> Result<Vec<AllowedSite>, String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare(&format!(
+            "SELECT {ALLOWED_SITE_COLUMNS} FROM allowed_sites ORDER BY created_at ASC"
+        ))
+        .map_err(|e| e.to_string())?;
+    let sites = stmt
+        .query_map([], row_to_allowed_site)
+        .map_err(|e| e.to_string())?
+        .filter_map(Result::ok)
+        .collect();
+    Ok(sites)
+}
+
+#[tauri::command]
+pub fn add_allowed_site(db: State<Db>, domain: String) -> Result<AllowedSite, String> {
+    let domain = domain
+        .trim()
+        .to_lowercase()
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .trim_start_matches("www.")
+        .trim_end_matches('/')
+        .to_string();
+    if domain.is_empty() {
+        return Err("Enter a valid domain".to_string());
+    }
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    let created_at = Utc::now();
+    conn.execute(
+        "INSERT OR IGNORE INTO allowed_sites (domain, created_at) VALUES (?1, ?2)",
+        rusqlite::params![domain, created_at],
+    )
+    .map_err(|e| e.to_string())?;
+    let site = conn
+        .query_row(
+            &format!("SELECT {ALLOWED_SITE_COLUMNS} FROM allowed_sites WHERE domain = ?1"),
+            rusqlite::params![domain],
+            row_to_allowed_site,
+        )
+        .map_err(|e| e.to_string())?;
+
+    if active_work_task_count(&conn) > 0 {
+        hosts::apply_block(&effective_block_domains(&conn));
+    }
+    Ok(site)
+}
+
+#[tauri::command]
+pub fn remove_allowed_site(db: State<Db>, id: i64) -> Result<(), String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    conn.execute(
+        "DELETE FROM allowed_sites WHERE id = ?1",
+        rusqlite::params![id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    if active_work_task_count(&conn) > 0 {
+        hosts::apply_block(&effective_block_domains(&conn));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_blocking_mode_cmd(db: State<Db>) -> Result<String, String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    Ok(get_blocking_mode(&conn))
+}
+
+#[tauri::command]
+pub fn set_blocking_mode_cmd(db: State<Db>, mode: String) -> Result<(), String> {
+    if mode != "blocklist" && mode != "allowlist" {
+        return Err("Invalid blocking mode".to_string());
+    }
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    set_blocking_mode(&conn, &mode).map_err(|e| e.to_string())?;
+
+    if active_work_task_count(&conn) > 0 {
+        hosts::apply_block(&effective_block_domains(&conn));
+    }
+    Ok(())
 }
 
 #[tauri::command]

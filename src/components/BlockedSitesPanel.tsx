@@ -1,48 +1,78 @@
-import { FormEvent, useState } from "react";
-import { Lock, Plus, Trash2 } from "lucide-react";
-import { BlockedSite } from "../api";
+import { Lock } from "lucide-react";
+import { AllowedSite, BlockedSite, BlockingMode } from "../api";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
+import DomainListEditor from "./DomainListEditor";
 
 interface Props {
-  sites: BlockedSite[];
+  mode: BlockingMode;
+  onSetMode: (mode: BlockingMode) => void;
+  blockedSites: BlockedSite[];
+  allowedSites: AllowedSite[];
   hasPermission: boolean;
   granting: boolean;
   onGrantPermission: () => void;
-  onAdd: (domain: string) => Promise<void>;
-  onRemove: (id: number) => Promise<void>;
+  onAddBlocked: (domain: string) => Promise<void>;
+  onRemoveBlocked: (id: number) => Promise<void>;
+  onAddAllowed: (domain: string) => Promise<void>;
+  onRemoveAllowed: (id: number) => Promise<void>;
 }
 
 export default function BlockedSitesPanel({
-  sites,
+  mode,
+  onSetMode,
+  blockedSites,
+  allowedSites,
   hasPermission,
   granting,
   onGrantPermission,
-  onAdd,
-  onRemove,
+  onAddBlocked,
+  onRemoveBlocked,
+  onAddAllowed,
+  onRemoveAllowed,
 }: Props) {
-  const [domain, setDomain] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!domain.trim()) return;
-    setSubmitting(true);
-    try {
-      await onAdd(domain.trim());
-      setDomain("");
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const isAllowlist = mode === "allowlist";
 
   return (
     <Card>
       <div>
-        <h3 className="font-heading text-sm font-medium">Blocked sites</h3>
+        <h3 className="font-heading text-sm font-medium">Site rules</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          These are blocked whenever a focus session is active.
+          {isAllowlist
+            ? "Everything on the curated distraction list is blocked during a focus session, except the sites you approve below."
+            : "These are blocked whenever a focus session is active."}
         </p>
+      </div>
+
+      <div
+        role="group"
+        aria-label="Blocking mode"
+        className="inline-flex w-fit gap-1 rounded-lg border border-border p-1"
+      >
+        <button
+          type="button"
+          aria-pressed={!isAllowlist}
+          onClick={() => onSetMode("blocklist")}
+          className={`rounded-md px-3 py-1.5 font-label text-xs uppercase transition ${
+            !isAllowlist
+              ? "bg-card text-foreground shadow-relief-sm ring-1 ring-foreground/10"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Block specific sites
+        </button>
+        <button
+          type="button"
+          aria-pressed={isAllowlist}
+          onClick={() => onSetMode("allowlist")}
+          className={`rounded-md px-3 py-1.5 font-label text-xs uppercase transition ${
+            isAllowlist
+              ? "bg-card text-foreground shadow-relief-sm ring-1 ring-foreground/10"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Allow specific sites
+        </button>
       </div>
 
       {!hasPermission && (
@@ -64,41 +94,24 @@ export default function BlockedSitesPanel({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-          placeholder="e.g. twitter.com"
-          className="flex-1 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-3 focus:ring-ring/50"
+      {isAllowlist ? (
+        <DomainListEditor
+          items={allowedSites}
+          addPlaceholder="e.g. docs.google.com"
+          emptyText="No approved sites yet — only the curated distraction list will be blocked."
+          removeLabel={(domain) => `Stop approving ${domain}`}
+          onAdd={onAddAllowed}
+          onRemove={onRemoveAllowed}
         />
-        <Button type="submit" disabled={submitting || !domain.trim()}>
-          <Plus className="size-3.5" aria-hidden="true" />
-          {submitting ? "Adding…" : "Add"}
-        </Button>
-      </form>
-
-      {sites.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No sites blocked yet.</p>
       ) : (
-        <ul className="flex flex-col gap-1">
-          {sites.map((s) => (
-            <li
-              key={s.id}
-              className="group flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-muted/60"
-            >
-              <span className="text-sm text-foreground">{s.domain}</span>
-              <button
-                onClick={() => {
-                  if (window.confirm(`Stop blocking "${s.domain}"?`)) onRemove(s.id);
-                }}
-                aria-label={`Remove ${s.domain}`}
-                className="rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 group-hover:opacity-100"
-              >
-                <Trash2 className="size-3.5" aria-hidden="true" />
-              </button>
-            </li>
-          ))}
-        </ul>
+        <DomainListEditor
+          items={blockedSites}
+          addPlaceholder="e.g. twitter.com"
+          emptyText="No sites blocked yet."
+          removeLabel={(domain) => `Stop blocking ${domain}`}
+          onAdd={onAddBlocked}
+          onRemove={onRemoveBlocked}
+        />
       )}
     </Card>
   );

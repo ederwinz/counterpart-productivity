@@ -2,17 +2,24 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Plus } from "lucide-react";
 import {
+  AllowedSite,
   BlockedSite,
+  BlockingMode,
   FocusTask,
   Task,
+  addAllowedSite,
   addBlockedSite,
   checkHostsPermission,
   createFocusTask,
+  getBlockingMode,
   grantHostsPermission,
+  listAllowedSites,
   listBlockedSites,
   listFocusTasks,
   listTasks,
+  removeAllowedSite,
   removeBlockedSite,
+  setBlockingMode as setBlockingModeApi,
 } from "../api";
 import GoalCard from "../components/GoalCard";
 import BlockedSitesPanel from "../components/BlockedSitesPanel";
@@ -29,6 +36,8 @@ export default function Dashboard() {
   const [goals, setGoals] = useState<FocusTask[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sites, setSites] = useState<BlockedSite[]>([]);
+  const [allowedSites, setAllowedSites] = useState<AllowedSite[]>([]);
+  const [blockingMode, setBlockingModeState] = useState<BlockingMode>("blocklist");
   // Defaults to false (fail-closed) so the permission banner never flashes hidden
   // for a frame while checkHostsPermission() is still resolving.
   const [hasPermission, setHasPermission] = useState(false);
@@ -39,6 +48,8 @@ export default function Dashboard() {
     listFocusTasks().then((all) => setGoals(all.filter((g) => !g.archived)));
     listTasks().then(setTasks);
     listBlockedSites().then(setSites);
+    listAllowedSites().then(setAllowedSites);
+    getBlockingMode().then(setBlockingModeState);
     checkHostsPermission().then(setHasPermission);
   }, []);
 
@@ -78,6 +89,21 @@ export default function Dashboard() {
   async function handleRemoveSite(id: number) {
     await removeBlockedSite(id);
     setSites(await listBlockedSites());
+  }
+
+  async function handleAddAllowedSite(domain: string) {
+    await addAllowedSite(domain);
+    setAllowedSites(await listAllowedSites());
+  }
+
+  async function handleRemoveAllowedSite(id: number) {
+    await removeAllowedSite(id);
+    setAllowedSites(await listAllowedSites());
+  }
+
+  async function handleSetBlockingMode(mode: BlockingMode) {
+    setBlockingModeState(mode);
+    await setBlockingModeApi(mode);
   }
 
   return (
@@ -139,12 +165,17 @@ export default function Dashboard() {
         <section>
           <h2 className="font-label mb-3 text-xs uppercase text-muted-foreground">Focus Mode</h2>
           <BlockedSitesPanel
-            sites={sites}
+            mode={blockingMode}
+            onSetMode={handleSetBlockingMode}
+            blockedSites={sites}
+            allowedSites={allowedSites}
             hasPermission={hasPermission}
             granting={granting}
             onGrantPermission={handleGrantPermission}
-            onAdd={handleAddSite}
-            onRemove={handleRemoveSite}
+            onAddBlocked={handleAddSite}
+            onRemoveBlocked={handleRemoveSite}
+            onAddAllowed={handleAddAllowedSite}
+            onRemoveAllowed={handleRemoveAllowedSite}
           />
         </section>
 

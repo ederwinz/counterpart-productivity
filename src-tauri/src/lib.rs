@@ -1,4 +1,5 @@
 mod commands;
+mod curated_domains;
 mod db;
 mod hosts;
 mod presets;
@@ -81,6 +82,11 @@ pub fn run() {
             commands::remove_blocked_site,
             commands::check_hosts_permission,
             commands::grant_hosts_permission,
+            commands::list_allowed_sites,
+            commands::add_allowed_site,
+            commands::remove_allowed_site,
+            commands::get_blocking_mode_cmd,
+            commands::set_blocking_mode_cmd,
             commands::open_dashboard,
             commands::list_presets,
             commands::start_preset_session,

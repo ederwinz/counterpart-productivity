@@ -42,6 +42,14 @@ export interface BlockedSite {
   created_at: string;
 }
 
+export interface AllowedSite {
+  id: number;
+  domain: string;
+  created_at: string;
+}
+
+export type BlockingMode = "blocklist" | "allowlist";
+
 export interface CustomPreset {
   id: number;
   label: string;
@@ -114,6 +122,26 @@ export function checkHostsPermission(): Promise<boolean> {
 
 export function grantHostsPermission(): Promise<void> {
   return invoke("grant_hosts_permission");
+}
+
+export function listAllowedSites(): Promise<AllowedSite[]> {
+  return invoke("list_allowed_sites");
+}
+
+export function addAllowedSite(domain: string): Promise<AllowedSite> {
+  return invoke("add_allowed_site", { domain });
+}
+
+export function removeAllowedSite(id: number): Promise<void> {
+  return invoke("remove_allowed_site", { id });
+}
+
+export function getBlockingMode(): Promise<BlockingMode> {
+  return invoke("get_blocking_mode_cmd");
+}
+
+export function setBlockingMode(mode: BlockingMode): Promise<void> {
+  return invoke("set_blocking_mode_cmd", { mode });
 }
 
 export function openDashboard(): Promise<void> {

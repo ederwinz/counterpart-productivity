@@ -45,6 +45,13 @@ pub struct BlockedSite {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AllowedSite {
+    pub id: i64,
+    pub domain: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomPreset {
     pub id: i64,
     pub label: String,
@@ -149,6 +156,25 @@ pub fn init(app_data_dir: PathBuf) -> Connection {
     )
     .expect("failed to create custom_presets table");
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS allowed_sites (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain     TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        )",
+        [],
+    )
+    .expect("failed to create allowed_sites table");
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS app_settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )",
+        [],
+    )
+    .expect("failed to create app_settings table");
+
     conn
 }
 
@@ -187,6 +213,14 @@ pub fn row_to_focus_task(row: &rusqlite::Row) -> rusqlite::Result<FocusTask> {
 
 pub fn row_to_blocked_site(row: &rusqlite::Row) -> rusqlite::Result<BlockedSite> {
     Ok(BlockedSite {
+        id: row.get(0)?,
+        domain: row.get(1)?,
+        created_at: row.get(2)?,
+    })
+}
+
+pub fn row_to_allowed_site(row: &rusqlite::Row) -> rusqlite::Result<AllowedSite> {
+    Ok(AllowedSite {
         id: row.get(0)?,
         domain: row.get(1)?,
         created_at: row.get(2)?,
@@ -236,6 +270,8 @@ pub const FOCUS_TASK_COLUMNS: &str = "id, name, daily_goal_minutes, archived, cr
 
 pub const BLOCKED_SITE_COLUMNS: &str = "id, domain, created_at";
 
+pub const ALLOWED_SITE_COLUMNS: &str = "id, domain, created_at";
+
 pub const CUSTOM_PRESET_COLUMNS: &str = "id, label, work_minutes, break_minutes, created_at";
 
 pub fn list_blocked_domains(conn: &Connection) -> Vec<String> {
@@ -247,4 +283,51 @@ pub fn list_blocked_domains(conn: &Connection) -> Vec<String> {
     stmt.query_map([], row_to_blocked_site)
         .map(|rows| rows.filter_map(Result::ok).map(|s| s.domain).collect())
         .unwrap_or_default()
+}
+
+pub fn list_allowed_domains(conn: &Connection) -> Vec<String> {
+    let mut stmt = match conn.prepare(&format!("SELECT {ALLOWED_SITE_COLUMNS} FROM allowed_sites"))
+    {
+        Ok(s) => s,
+        Err(_) => return Vec::new(),
+    };
+    stmt.query_map([], row_to_allowed_site)
+        .map(|rows| rows.filter_map(Result::ok).map(|s| s.domain).collect())
+        .unwrap_or_default()
+}
+
+/// "blocklist" (default) or "allowlist".
+pub fn get_blocking_mode(conn: &Connection) -> String {
+    conn.query_row(
+        "SELECT value FROM app_settings WHERE key = 'blocking_mode'",
+        [],
+        |r| r.get(0),
+    )
+    .unwrap_or_else(|_| "blocklist".to_string())
+}
+
+pub fn set_blocking_mode(conn: &Connection, mode: &str) -> rusqlite::Result<()> {
+    conn.execute(
+        "INSERT INTO app_settings (key, value) VALUES ('blocking_mode', ?1)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        rusqlite::params![mode],
+    )?;
+    Ok(())
+}
+
+/// The domain list that should actually be redirected to 127.0.0.1 right now,
+/// depending on the active blocking mode. In "blocklist" mode this is just the
+/// user's explicit block list (today's behavior). In "allowlist" mode it's the
+/// curated distraction list minus whatever the user has explicitly approved.
+pub fn effective_block_domains(conn: &Connection) -> Vec<String> {
+    if get_blocking_mode(conn) == "allowlist" {
+        let allowed: std::collections::HashSet<String> =
+            list_allowed_domains(conn).into_iter().collect();
+        crate::curated_domains::curated_domains()
+            .into_iter()
+            .filter(|d| !allowed.contains(d))
+            .collect()
+    } else {
+        list_blocked_domains(conn)
+    }
 }
