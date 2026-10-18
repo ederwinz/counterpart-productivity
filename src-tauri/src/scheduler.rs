@@ -1,10 +1,16 @@
 use crate::db::{active_work_task_count, effective_block_domains, row_to_task, Db, SELECT_COLUMNS};
 use crate::hosts;
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
 
 const TICK: std::time::Duration = std::time::Duration::from_secs(1);
+
+/// Real-world gap between ticks beyond which we conclude the system (or this
+/// process) was asleep/suspended, rather than just normal scheduler jitter —
+/// `tick()` is driven by `Utc::now()`, not an elapsed counter, so without this
+/// check a laptop nap would silently count as focused work the moment it woke.
+const SLEEP_GAP_THRESHOLD_SECS: i64 = 5;
 
 /// Reconciles /etc/hosts blocking against the DB's actual active-task state.
 /// Needed because blocking is otherwise only cleared reactively by a status
@@ -24,16 +30,42 @@ pub fn reconcile(app: &AppHandle) {
 pub fn spawn(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let mut interval = tokio::time::interval(TICK);
+        let mut last_tick = Utc::now();
         loop {
             interval.tick().await;
-            tick(&app);
+            last_tick = tick(&app, last_tick);
         }
     });
 }
 
-fn tick(app: &AppHandle) {
+fn tick(app: &AppHandle, last_tick: DateTime<Utc>) -> DateTime<Utc> {
     let db = app.state::<Db>();
     let now = Utc::now();
+
+    // Credit a sleep/suspend gap to every currently active task's
+    // paused_seconds_total — exactly like a manual pause — so the dead time
+    // pushes the task's end back instead of counting toward its duration.
+    let gap_seconds = (now - last_tick).num_seconds();
+    if gap_seconds > SLEEP_GAP_THRESHOLD_SECS {
+        let dead_seconds = gap_seconds - 1;
+        let conn = db.0.lock().expect("db lock poisoned");
+        let credited: Vec<i64> = conn
+            .prepare("SELECT id FROM tasks WHERE status = 'active'")
+            .expect("prepare failed")
+            .query_map([], |row| row.get(0))
+            .expect("query failed")
+            .filter_map(Result::ok)
+            .collect();
+        conn.execute(
+            "UPDATE tasks SET paused_seconds_total = paused_seconds_total + ?1 WHERE status = 'active'",
+            rusqlite::params![dead_seconds],
+        )
+        .ok();
+        drop(conn);
+        for id in credited {
+            let _ = app.emit("task-updated", id);
+        }
+    }
 
     let started: Vec<crate::db::Task> = {
         let conn = db.0.lock().expect("db lock poisoned");
@@ -48,11 +80,23 @@ fn tick(app: &AppHandle) {
             .filter_map(Result::ok)
             .collect();
         for task in &due {
-            conn.execute(
-                "UPDATE tasks SET status = 'active' WHERE id = ?1",
-                rusqlite::params![task.id],
-            )
-            .ok();
+            // A task discovered long after it was due (system asleep/suspended
+            // through its scheduled window) gets its clock reset to start now,
+            // the same as "Now" mode — otherwise it would run through the
+            // completion check below having never actually run.
+            if (now - task.scheduled_start).num_seconds() > SLEEP_GAP_THRESHOLD_SECS {
+                conn.execute(
+                    "UPDATE tasks SET status = 'active', scheduled_start = ?1 WHERE id = ?2",
+                    rusqlite::params![now, task.id],
+                )
+                .ok();
+            } else {
+                conn.execute(
+                    "UPDATE tasks SET status = 'active' WHERE id = ?1",
+                    rusqlite::params![task.id],
+                )
+                .ok();
+            }
         }
         due
     };
@@ -129,6 +173,7 @@ fn tick(app: &AppHandle) {
     }
 
     update_tray(app, &db, now);
+    now
 }
 
 /// If a just-completed task is part of an auto-cycling preset, insert the next
