@@ -53,7 +53,7 @@ export default function BlockedSitesPanel({
           type="button"
           aria-pressed={!isAllowlist}
           onClick={() => onSetMode("blocklist")}
-          className={`rounded-md px-3 py-1.5 font-label text-xs uppercase transition ${
+          className={`press rounded-md px-3 py-1.5 font-label text-xs uppercase transition-[background-color,box-shadow,color,scale] duration-150 [transition-timing-function:var(--ease-out)] ${
             !isAllowlist
               ? "bg-card text-foreground shadow-relief-sm ring-1 ring-foreground/10"
               : "text-muted-foreground hover:text-foreground"
@@ -65,7 +65,7 @@ export default function BlockedSitesPanel({
           type="button"
           aria-pressed={isAllowlist}
           onClick={() => onSetMode("allowlist")}
-          className={`rounded-md px-3 py-1.5 font-label text-xs uppercase transition ${
+          className={`press rounded-md px-3 py-1.5 font-label text-xs uppercase transition-[background-color,box-shadow,color,scale] duration-150 [transition-timing-function:var(--ease-out)] ${
             isAllowlist
               ? "bg-card text-foreground shadow-relief-sm ring-1 ring-foreground/10"
               : "text-muted-foreground hover:text-foreground"
@@ -76,7 +76,7 @@ export default function BlockedSitesPanel({
       </div>
 
       {!hasPermission && (
-        <div className="rounded-lg border border-secondary/40 bg-secondary/10 p-3">
+        <div className="reveal rounded-lg border border-secondary/40 bg-secondary/10 p-3">
           <p className="text-xs text-secondary-hover">
             Focus needs one-time permission to edit your system's site list. You'll see a macOS
             password prompt once — after that, blocking works automatically.

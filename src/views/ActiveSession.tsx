@@ -66,13 +66,13 @@ export default function ActiveSession({ task, onStopped }: Props) {
   const secs = String(seconds % 60).padStart(2, "0");
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 bg-surface-stage p-6 text-center text-surface-stage-foreground">
+    <div className="reveal flex h-full flex-col items-center justify-center gap-4 bg-surface-stage p-6 text-center text-surface-stage-foreground">
       <p className="font-label flex items-center gap-1.5 text-xs uppercase text-surface-stage-border">
         {paused && <Pause className="size-3.5" aria-hidden="true" />}
         {paused ? "Paused" : task.is_break ? "Break" : "Focus Mode"}
       </p>
       <p
-        className={`font-display text-5xl font-medium tabular-nums tracking-tight ${paused ? "opacity-50" : ""}`}
+        className={`font-display text-5xl font-medium leading-none tabular-nums tracking-[-0.03em] ${paused ? "opacity-50" : ""}`}
       >
         {mins}:{secs}
       </p>

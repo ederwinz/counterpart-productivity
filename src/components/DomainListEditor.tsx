@@ -62,7 +62,7 @@ export default function DomainListEditor({
           {items.map((item) => (
             <li
               key={item.id}
-              className="group flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-muted/60"
+              className="group flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:bg-muted/60"
             >
               <span className="text-sm text-foreground">{item.domain}</span>
               {confirmingId === item.id ? (
@@ -90,7 +90,7 @@ export default function DomainListEditor({
                 <button
                   onClick={() => setConfirmingId(item.id)}
                   aria-label={removeLabel(item.domain)}
-                  className="rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 group-hover:opacity-100"
+                  className="hover-reveal-icon rounded-md p-1 text-muted-foreground opacity-0 hover:bg-muted hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 group-hover:opacity-100"
                 >
                   <Trash2 className="size-3.5" aria-hidden="true" />
                 </button>

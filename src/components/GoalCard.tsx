@@ -1,4 +1,4 @@
-import { Flame } from "lucide-react";
+import { Check, Flame } from "lucide-react";
 import { FocusTask } from "../api";
 import { useReducedMotion } from "../hooks/use-reduced-motion";
 import { currentStreak, minutesToday, recentDayKeys } from "../lib/stats";
@@ -69,7 +69,7 @@ export default function GoalCard({ goal, byDay }: Props) {
               fill="none"
               strokeWidth="7"
               strokeLinecap="round"
-              className={`text-primary ${reducedMotion ? "" : "transition-[stroke-dashoffset] duration-500 ease-out"}`}
+              className={`text-primary ${reducedMotion ? "" : "transition-[stroke-dashoffset] duration-500 [transition-timing-function:var(--ease-out)]"}`}
               stroke="currentColor"
               strokeDasharray={RING_CIRCUMFERENCE}
               strokeDashoffset={ringOffset}
@@ -97,7 +97,13 @@ export default function GoalCard({ goal, byDay }: Props) {
         <div
           className="flex h-14 items-end gap-1.5"
           role="img"
-          aria-label={`Last 7 days: ${days.map((key) => `${byDay?.get(key) ?? 0} minutes`).join(", ")}`}
+          aria-label={`Last 7 days: ${days
+            .map((key) => {
+              const m = byDay?.get(key) ?? 0;
+              const met = m >= goal.daily_goal_minutes && goal.daily_goal_minutes > 0;
+              return `${m} minutes${met ? " (goal met)" : ""}`;
+            })
+            .join(", ")}`}
         >
           {days.map((key) => {
             const minutes = byDay?.get(key) ?? 0;
@@ -105,7 +111,10 @@ export default function GoalCard({ goal, byDay }: Props) {
             const height = Math.max(6, Math.round((minutes / maxRecent) * 100));
             return (
               <div key={key} className="flex flex-1 flex-col items-center gap-1">
-                <span className="font-label text-[9px] tabular-nums text-muted-foreground/70">
+                <span
+                  className={`font-label flex h-3 items-center gap-0.5 text-[9px] tabular-nums ${met ? "text-primary" : "text-muted-foreground/70"}`}
+                >
+                  {met && <Check className="size-2.5" strokeWidth={3} aria-hidden="true" />}
                   {minutes > 0 ? minutes : ""}
                 </span>
                 <div className="flex h-9 w-full items-end">

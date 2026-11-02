@@ -88,6 +88,11 @@
   --font-display: "Schibsted Grotesk", sans-serif;
   --font-body: "Work Sans", sans-serif;
   --font-label: "Fragment Mono", monospace;
+
+  /* Motion: one strong ease-out (built-in CSS easings are too weak for UI
+     feedback). Deliberately shadows Tailwind's own --ease-out (unlayered beats
+     @layer theme), so the `ease-out` utility picks this curve up too. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @theme inline {
@@ -182,10 +187,52 @@
   }
 
   .animate-select-in {
-    animation: select-in 120ms ease-out;
+    animation: select-in 120ms var(--ease-out);
   }
   .animate-select-out {
-    animation: select-out 100ms ease-in;
+    animation: select-out 100ms var(--ease-out);
+  }
+
+  /* Shared press feedback for hand-rolled clickable chips/cards that aren't
+     <Button>. Active state only — the element's own transition list must
+     include `scale` (uses the individual property, like Tailwind v4's scale-*). */
+  .press:active {
+    scale: 0.97;
+  }
+
+  /* Shared mount transition for rare, felt moments (permission grant, a
+     session starting, a reveal panel opening) — never from scale(0). */
+  .reveal {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+  }
+  @starting-style {
+    .reveal {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
+  /* Consolidates the repeated hover-reveal delete-icon pattern (TaskList,
+     TaskForm, DomainListEditor) with an explicit, targeted transition. */
+  .hover-reveal-icon {
+    transition: opacity 120ms var(--ease-out), background-color 120ms var(--ease-out),
+      color 120ms var(--ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .press:active {
+      scale: none;
+    }
+    .reveal {
+      transition: opacity 160ms var(--ease-out);
+    }
+    @starting-style {
+      .reveal {
+        transform: none;
+      }
+    }
   }
 }
 

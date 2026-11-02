@@ -110,7 +110,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
   useEffect(() => {
     listPresets().then((defs) => {
       setPresetDefs(defs);
-      setSelectedPresetKey((current) => current ?? defs[0]?.key ?? null);
+      setSelectedPresetKey((current) => current ?? (defs[0] ? `static:${defs[0].key}` : null));
     });
     refreshCustomPresets();
   }, []);
@@ -210,7 +210,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
             aria-selected={mode === tab.key}
             onClick={() => setMode(tab.key)}
             className={cn(
-              "font-label rounded-full px-3 py-1 text-xs uppercase transition-colors",
+              "font-label rounded-full px-3 py-1 text-xs uppercase transition-[background-color,box-shadow,color] duration-150 [transition-timing-function:var(--ease-out)]",
               mode === tab.key
                 ? "bg-card text-foreground shadow-relief-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -233,7 +233,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
                   setUsingCustom(false);
                 }}
                 className={cn(
-                  "font-label rounded-full border px-3 py-1.5 text-xs uppercase transition-colors",
+                  "press font-label rounded-full border px-3 py-1.5 text-xs uppercase transition-[background-color,border-color,color,scale] duration-150 [transition-timing-function:var(--ease-out)]",
                   !usingCustom && preset === mins
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-transparent text-muted-foreground hover:text-foreground",
@@ -246,7 +246,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
               type="button"
               onClick={() => setUsingCustom(true)}
               className={cn(
-                "font-label rounded-full border px-3 py-1.5 text-xs uppercase transition-colors",
+                "press font-label rounded-full border px-3 py-1.5 text-xs uppercase transition-[background-color,border-color,color,scale] duration-150 [transition-timing-function:var(--ease-out)]",
                 usingCustom
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-transparent text-muted-foreground hover:text-foreground",
@@ -255,9 +255,10 @@ export default function TaskForm({ goals, onCreated }: Props) {
               Custom…
             </button>
             {usingCustom && (
-              <div className="flex h-8 items-center gap-1.5 rounded-full border border-border px-3">
+              <div className="reveal flex h-8 items-center gap-1.5 rounded-full border border-border px-3">
                 <input
                   type="number"
+                  aria-label="Custom duration in minutes"
                   min={5}
                   step={5}
                   value={customDuration}
@@ -305,7 +306,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
                 <div
                   key={p.key}
                   className={cn(
-                    "group flex w-full flex-col gap-1.5 rounded-[10px] border px-3 py-2.5 text-left transition-colors",
+                    "press group flex w-full flex-col gap-1.5 rounded-[10px] border px-3 py-2.5 text-left transition-[background-color,border-color,box-shadow,scale] duration-150 [transition-timing-function:var(--ease-out)]",
                     selected
                       ? "border-primary ring-1 ring-primary/30"
                       : "border-border bg-transparent hover:bg-muted",
@@ -316,12 +317,13 @@ export default function TaskForm({ goals, onCreated }: Props) {
                       type="button"
                       onClick={() => setSelectedPresetKey(p.key)}
                       aria-pressed={selected}
-                      className="flex flex-1 items-center gap-1.5 text-left text-sm font-medium text-foreground"
+                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium text-foreground"
+                      title={p.label}
                     >
                       {selected && (
                         <Check className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
                       )}
-                      {p.label}
+                      <span className="truncate">{p.label}</span>
                     </button>
                     <span className="flex shrink-0 items-center gap-1.5">
                       <button
@@ -337,7 +339,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
                           type="button"
                           aria-label={`Delete ${p.label} preset`}
                           onClick={() => handleDeleteCustomPreset(p.customId!)}
-                          className="rounded-md p-1 text-muted-foreground opacity-0 transition hover:bg-muted hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 group-hover:opacity-100"
+                          className="hover-reveal-icon rounded-md p-1 text-muted-foreground opacity-0 hover:bg-muted hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 group-hover:opacity-100"
                         >
                           <Trash2 className="size-3.5" aria-hidden="true" />
                         </button>
@@ -352,7 +354,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
             })}
 
             {addingCustom ? (
-              <div className="flex flex-col gap-2 rounded-[10px] border border-border px-3 py-2.5">
+              <div className="reveal flex flex-col gap-2 rounded-[10px] border border-border px-3 py-2.5">
                 <Input
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
@@ -413,7 +415,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
               <button
                 type="button"
                 onClick={() => setAddingCustom(true)}
-                className="font-label flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-border px-3 py-2.5 text-xs uppercase text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+                className="font-label flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-border px-3 py-2.5 text-xs uppercase text-muted-foreground transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:border-foreground/30 hover:text-foreground"
               >
                 <Plus className="size-3.5" aria-hidden="true" />
                 Add custom preset
@@ -444,7 +446,9 @@ export default function TaskForm({ goals, onCreated }: Props) {
           />
 
           <Button type="submit" disabled={startingPreset || !selectedPreset} className="w-full">
-            {startingPreset ? "Starting…" : `Start ${selectedPreset?.label ?? "Preset"}`}
+            <span className="truncate">
+              {startingPreset ? "Starting…" : `Start ${selectedPreset?.label ?? "Preset"}`}
+            </span>
           </Button>
         </form>
       ) : (
@@ -483,6 +487,7 @@ export default function TaskForm({ goals, onCreated }: Props) {
                 step={5}
                 value={laterDuration}
                 onChange={(e) => setLaterDuration(Number(e.target.value))}
+                aria-label="Duration in minutes"
                 className="w-14 bg-transparent text-sm text-foreground outline-none"
               />
               <span className="font-label text-xs uppercase text-muted-foreground">min</span>
