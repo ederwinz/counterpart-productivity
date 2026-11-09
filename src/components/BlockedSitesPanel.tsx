@@ -78,7 +78,7 @@ export default function BlockedSitesPanel({
       {!hasPermission && (
         <div className="reveal rounded-lg border border-secondary/40 bg-secondary/10 p-3">
           <p className="text-xs text-secondary-hover">
-            Focus needs one-time permission to edit your system's site list. You'll see a macOS
+            Counterpart needs one-time permission to edit your system's site list. You'll see a macOS
             password prompt once — after that, blocking works automatically.
           </p>
           <Button

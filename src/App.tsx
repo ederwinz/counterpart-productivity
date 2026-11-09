@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Task, listTasks } from "./api";
 import ActiveSession from "./views/ActiveSession";
 import Dashboard from "./views/Dashboard";
+import DayDetail from "./views/DayDetail";
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -26,7 +27,7 @@ export default function App() {
     };
   }, [refresh]);
 
-  const isDashboard = getCurrentWindow().label === "dashboard";
+  const label = getCurrentWindow().label;
   const active = tasks.find((t) => t.status === "active" || t.status === "paused");
 
   // The "main" popover only ever shows the live countdown. Once a session ends
@@ -34,13 +35,16 @@ export default function App() {
   // than stranding the user on an empty view (clicking the tray icon reopens
   // the Dashboard instead when nothing is active).
   useEffect(() => {
-    if (!isDashboard && !active && tasks.length > 0) {
+    if (label === "main" && !active && tasks.length > 0) {
       getCurrentWindow().hide();
     }
-  }, [isDashboard, active, tasks.length]);
+  }, [label, active, tasks.length]);
 
-  if (isDashboard) {
+  if (label === "dashboard") {
     return <Dashboard />;
+  }
+  if (label === "day") {
+    return <DayDetail />;
   }
 
   return (

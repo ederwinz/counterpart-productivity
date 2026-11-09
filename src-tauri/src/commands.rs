@@ -278,6 +278,19 @@ pub fn resume_task(app: AppHandle, db: State<Db>, id: i64) -> Result<(), String>
     Ok(())
 }
 
+/// Hides every finished task from the Done list. Rows are kept (not deleted)
+/// because goal progress, streaks, and today's total are computed from them.
+#[tauri::command]
+pub fn clear_done_tasks(db: State<Db>) -> Result<(), String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    conn.execute(
+        "UPDATE tasks SET cleared = 1 WHERE status IN ('completed', 'skipped')",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 pub fn list_focus_tasks(db: State<Db>) -> Result<Vec<FocusTask>, String> {
     let conn = db.0.lock().map_err(|e| e.to_string())?;
@@ -498,13 +511,51 @@ pub fn open_dashboard(app: AppHandle) -> Result<(), String> {
         return Ok(());
     }
     WebviewWindowBuilder::new(&app, "dashboard", WebviewUrl::App("index.html".into()))
-        .title("Focus — Dashboard")
+        .title("Counterpart — Dashboard")
         .inner_size(960.0, 680.0)
         .min_inner_size(720.0, 520.0)
         .resizable(true)
         .visible(true)
         .build()
         .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Opens the single reusable "day" window for one heatmap day. If it already
+/// exists (closing only hides it), it's retargeted via a `day-selected` event
+/// instead of rebuilt, so there's never more than one day window.
+#[tauri::command]
+pub fn open_day_detail(app: AppHandle, date: String, title: String) -> Result<(), String> {
+    let valid = date.len() == 10
+        && date
+            .chars()
+            .enumerate()
+            .all(|(i, c)| if i == 4 || i == 7 { c == '-' } else { c.is_ascii_digit() });
+    if !valid {
+        return Err(format!("invalid date: {date}"));
+    }
+    let window_title = format!("Counterpart — {title}");
+
+    if let Some(window) = app.get_webview_window("day") {
+        app.emit_to("day", "day-selected", &date)
+            .map_err(|e| e.to_string())?;
+        window.set_title(&window_title).map_err(|e| e.to_string())?;
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+    WebviewWindowBuilder::new(
+        &app,
+        "day",
+        WebviewUrl::App(format!("index.html?day={date}").into()),
+    )
+    .title(window_title)
+    .inner_size(560.0, 680.0)
+    .min_inner_size(440.0, 480.0)
+    .resizable(true)
+    .visible(true)
+    .build()
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
 

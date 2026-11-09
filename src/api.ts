@@ -16,6 +16,7 @@ export interface Task {
   cycle_rounds_before_long_break: number | null;
   paused_at: string | null;
   paused_seconds_total: number;
+  cleared: boolean;
 }
 
 export interface PresetDef {
@@ -92,6 +93,10 @@ export function resumeTask(id: number): Promise<void> {
   return invoke("resume_task", { id });
 }
 
+export function clearDoneTasks(): Promise<void> {
+  return invoke("clear_done_tasks");
+}
+
 export function listFocusTasks(): Promise<FocusTask[]> {
   return invoke("list_focus_tasks");
 }
@@ -146,6 +151,11 @@ export function setBlockingMode(mode: BlockingMode): Promise<void> {
 
 export function openDashboard(): Promise<void> {
   return invoke("open_dashboard");
+}
+
+/** `date` is a "YYYY-MM-DD" day key; `title` is the human date for the window title. */
+export function openDayDetail(date: string, title: string): Promise<void> {
+  return invoke("open_day_detail", { date, title });
 }
 
 export function listPresets(): Promise<PresetDef[]> {

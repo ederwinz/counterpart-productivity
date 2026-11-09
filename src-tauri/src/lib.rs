@@ -36,8 +36,9 @@ pub fn run() {
 
             TrayIconBuilder::with_id("main")
                 .icon(tauri::image::Image::from_bytes(include_bytes!(
-                    "../icons/32x32.png"
+                    "../icons/tray.png"
                 ))?)
+                .icon_as_template(true)
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -74,6 +75,7 @@ pub fn run() {
             commands::update_task_status,
             commands::pause_task,
             commands::resume_task,
+            commands::clear_done_tasks,
             commands::list_focus_tasks,
             commands::create_focus_task,
             commands::archive_focus_task,
@@ -88,6 +90,7 @@ pub fn run() {
             commands::get_blocking_mode_cmd,
             commands::set_blocking_mode_cmd,
             commands::open_dashboard,
+            commands::open_day_detail,
             commands::list_presets,
             commands::start_preset_session,
             commands::list_custom_presets,

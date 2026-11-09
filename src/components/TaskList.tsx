@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, CheckCircle2, SkipForward, Trash2, X } from "lucide-react";
-import { Task, deleteTask } from "../api";
+import { Task, clearDoneTasks, deleteTask } from "../api";
+import { Button } from "./ui/button";
 
 const DONE_LIMIT = 5;
 
@@ -19,6 +20,19 @@ interface Props {
 
 export default function TaskList({ tasks, onChanged }: Props) {
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  async function handleClearDone() {
+    setClearing(true);
+    try {
+      await clearDoneTasks();
+      setConfirmingClear(false);
+      onChanged();
+    } finally {
+      setClearing(false);
+    }
+  }
 
   async function handleDelete(id: number) {
     setConfirmingId(null);
@@ -27,7 +41,9 @@ export default function TaskList({ tasks, onChanged }: Props) {
   }
 
   const upcoming = tasks.filter((t) => t.status === "pending");
-  const past = tasks.filter((t) => t.status === "completed" || t.status === "skipped").reverse();
+  const past = tasks
+    .filter((t) => (t.status === "completed" || t.status === "skipped") && !t.cleared)
+    .reverse();
   const hiddenCount = past.length - DONE_LIMIT;
 
   return (
@@ -82,7 +98,26 @@ export default function TaskList({ tasks, onChanged }: Props) {
 
       {past.length > 0 && (
         <>
-          <h2 className="font-label mb-2 mt-6 text-xs uppercase text-muted-foreground">Done</h2>
+          <div className="mb-2 mt-6 flex min-h-7 items-center justify-between gap-2">
+            <h2 className="font-label text-xs uppercase text-muted-foreground">Done</h2>
+            {confirmingClear ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">
+                  Clear {past.length} finished {past.length === 1 ? "task" : "tasks"}?
+                </span>
+                <Button variant="destructive" size="sm" onClick={handleClearDone} disabled={clearing}>
+                  {clearing ? "Clearing…" : "Clear"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmingClear(false)}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => setConfirmingClear(true)}>
+                Clear
+              </Button>
+            )}
+          </div>
           <ul className="flex flex-col gap-1">
             {past.slice(0, DONE_LIMIT).map((t) => (
               <li key={t.id} className="flex items-center gap-2 px-2 py-1.5">

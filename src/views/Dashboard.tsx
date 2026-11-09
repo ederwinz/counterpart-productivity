@@ -24,6 +24,7 @@ import {
 import GoalCard from "../components/GoalCard";
 import BlockedSitesPanel from "../components/BlockedSitesPanel";
 import FeedbackForm from "../components/FeedbackForm";
+import FocusHeatmap from "../components/FocusHeatmap";
 import TaskForm from "../components/TaskForm";
 import TaskList from "../components/TaskList";
 import TodaySummary from "../components/TodaySummary";
@@ -117,6 +118,10 @@ export default function Dashboard() {
         </header>
 
         <section>
+          <FocusHeatmap tasks={tasks} />
+        </section>
+
+        <section>
           <TodaySummary tasks={tasks} goals={goals} byGoal={byGoal} />
         </section>
 
@@ -156,7 +161,7 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {goals.map((g) => (
-                <GoalCard key={g.id} goal={g} byDay={byGoal.get(g.id)} />
+                <GoalCard key={g.id} goal={g} byDay={byGoal.get(g.id)} onRemoved={refresh} />
               ))}
             </div>
           )}

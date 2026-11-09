@@ -1,16 +1,16 @@
-# Focus
+# Counterpart
 
 A native macOS menu-bar app for scheduling and running focus sessions — built with **Tauri (Rust)** and **React/TypeScript**.
 
 Schedule a block of time and it starts itself: the task auto-flips to active, fires a system notification, blocks distracting sites for the duration, and counts down live in the menu bar. No timers to remember to start, no manual "begin session" click.
 
 <p align="center">
-  <img src="assets/screenshots/dashboard.png" width="720" alt="Focus dashboard — goals, progress, and session scheduling">
+  <img src="assets/screenshots/dashboard.png" width="720" alt="Counterpart dashboard — goals, progress, and session scheduling">
 </p>
 
 ## Why this project
 
-Most focus-timer apps make you babysit them: start the timer, remember to switch to the break, remember to start the next round. Focus is designed around a single idea — **you set the schedule once, the app owns the rest.** A background scheduler tick-checks task state every second and drives the entire session lifecycle (pending → active → completed) without any user interaction in between, including chaining work/break rounds for techniques like Pomodoro automatically.
+Most focus-timer apps make you babysit them: start the timer, remember to switch to the break, remember to start the next round. Counterpart is designed around a single idea — **you set the schedule once, the app owns the rest.** A background scheduler tick-checks task state every second and drives the entire session lifecycle (pending → active → completed) without any user interaction in between, including chaining work/break rounds for techniques like Pomodoro automatically.
 
 ## Features
 
@@ -48,20 +48,20 @@ Most focus-timer apps make you babysit them: start the timer, remember to switch
 
 ## Download
 
-Focus is in early beta. Grab the latest build from [GitHub Releases](https://github.com/ederwinz/counterpart-productivity/releases/latest):
+Counterpart is in early beta. Grab the latest build from [GitHub Releases](https://github.com/ederwinz/counterpart-productivity/releases/latest):
 
 1. Download the `.dmg` (Apple Silicon Macs only for now).
-2. Open it and drag **Focus.app** into **Applications**.
+2. Open it and drag **Counterpart.app** into **Applications**.
 3. See **Gatekeeper bypass** below before you launch it the first time.
 
-This beta build is unsigned (no Apple Developer ID yet), so macOS's Gatekeeper will refuse to open it with a normal double-click. Once launched (see below), Focus runs as a completely normal app — the one-time bypass is only needed the first time.
+This beta build is unsigned (no Apple Developer ID yet), so macOS's Gatekeeper will refuse to open it with a normal double-click. Once launched (see below), Counterpart runs as a completely normal app — the one-time bypass is only needed the first time.
 
 ### Gatekeeper bypass
 
-macOS will say *"Focus can't be opened because it is from an unidentified developer."* To get past this (only needs doing once):
+macOS will say *"Counterpart can't be opened because it is from an unidentified developer."* To get past this (only needs doing once):
 
-- **Finder**: right-click (or Control-click) **Focus.app** → **Open** → confirm **Open** in the dialog that appears.
-- **Terminal**: `xattr -cr /Applications/Focus.app`, then launch normally.
+- **Finder**: right-click (or Control-click) **Counterpart.app** → **Open** → confirm **Open** in the dialog that appears.
+- **Terminal**: `xattr -cr /Applications/Counterpart.app`, then launch normally.
 
 Proper code signing + notarization (which removes this warning entirely) is planned as a fast-follow.
 

@@ -1,5 +1,6 @@
-import { Check, Flame } from "lucide-react";
-import { FocusTask } from "../api";
+import { useState } from "react";
+import { Check, Flame, Trash2, X } from "lucide-react";
+import { FocusTask, archiveFocusTask } from "../api";
 import { useReducedMotion } from "../hooks/use-reduced-motion";
 import { currentStreak, minutesToday, recentDayKeys } from "../lib/stats";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -15,10 +16,18 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 interface Props {
   goal: FocusTask;
   byDay: Map<string, number> | undefined;
+  onRemoved: () => void;
 }
 
-export default function GoalCard({ goal, byDay }: Props) {
+export default function GoalCard({ goal, byDay, onRemoved }: Props) {
   const reducedMotion = useReducedMotion();
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
+
+  async function handleRemove() {
+    setConfirmingRemove(false);
+    await archiveFocusTask(goal.id);
+    onRemoved();
+  }
   const today = minutesToday(byDay);
   const pct = Math.min(100, Math.round((today / Math.max(1, goal.daily_goal_minutes)) * 100));
   const ringOffset = RING_CIRCUMFERENCE * (1 - pct / 100);
@@ -29,21 +38,51 @@ export default function GoalCard({ goal, byDay }: Props) {
   return (
     <Card>
       <CardHeader>
-        <div>
+        <div className="min-w-0">
           <CardTitle>{goal.name}</CardTitle>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Goal: {goal.daily_goal_minutes} min / day
           </p>
         </div>
-        {streak > 0 && (
-          <span
-            className="font-label flex items-center gap-1 rounded-full bg-secondary/15 px-2 py-1 text-xs text-secondary-hover"
-            aria-label={`${streak} day streak`}
-          >
-            <Flame className="size-3.5" aria-hidden="true" />
-            {streak}d
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {streak > 0 && (
+            <span
+              className="font-label flex items-center gap-1 rounded-full bg-secondary/15 px-2 py-1 text-xs text-secondary-hover"
+              aria-label={`${streak} day streak`}
+            >
+              <Flame className="size-3.5" aria-hidden="true" />
+              {streak}d
+            </span>
+          )}
+          {confirmingRemove ? (
+            <div className="flex shrink-0 items-center gap-1">
+              <span className="text-xs text-muted-foreground">Remove goal?</span>
+              <button
+                onClick={handleRemove}
+                aria-label={`Confirm: remove ${goal.name} goal`}
+                className="rounded-md p-1 text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <Check className="size-3.5" aria-hidden="true" />
+              </button>
+              <button
+                onClick={() => setConfirmingRemove(false)}
+                aria-label="Cancel"
+                className="rounded-md p-1 text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmingRemove(true)}
+              aria-label={`Remove ${goal.name} goal`}
+              title="Remove goal"
+              className="hover-reveal-icon shrink-0 rounded-md p-1 text-muted-foreground/60 hover:bg-muted hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-5">

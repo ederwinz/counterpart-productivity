@@ -21,7 +21,7 @@ pub fn grant_permission() -> Result<(), String> {
         return Err("Unexpected username format".to_string());
     }
     let script = format!(
-        "do shell script \"chown {user} {HOSTS_PATH}\" with administrator privileges with prompt \"Focus needs one-time permission to block distracting websites during focus sessions.\""
+        "do shell script \"chown {user} {HOSTS_PATH}\" with administrator privileges with prompt \"Counterpart needs one-time permission to block distracting websites during focus sessions.\""
     );
     let status = Command::new("osascript")
         .arg("-e")

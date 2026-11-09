@@ -27,6 +27,8 @@
   --color-ink-700: #3c372c;
   --color-ink-500: #6d6553;
 
+  --color-moss-200: #c3cdb3;
+  --color-moss-300: #8fa583;
   --color-moss-500: #587a52;
   --color-moss-700: #33512e;
   --color-moss-900: #1f331c;
@@ -70,6 +72,13 @@
   --border: var(--color-ink-950);
   --input: var(--color-ink-950);
   --ring: var(--color-teal-500);
+
+  /* Focus heatmap ramp: fixed hour buckets (see lib/stats.ts heatLevel) */
+  --heat-0: color-mix(in oklab, var(--color-paper-300) 55%, var(--color-paper-100));
+  --heat-1: var(--color-moss-200);
+  --heat-2: var(--color-moss-300);
+  --heat-3: var(--color-moss-500);
+  --heat-4: var(--color-moss-700);
 
   /* Stage surface: permanent dark "inset plate" register, scoped to Focus Mode */
   --surface-stage: var(--color-moss-900);
@@ -125,6 +134,12 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-heat-0: var(--heat-0);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
 
   --color-surface-stage: var(--surface-stage);
   --color-surface-stage-foreground: var(--surface-stage-foreground);

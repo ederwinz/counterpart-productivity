@@ -26,6 +26,7 @@ pub struct Task {
     pub cycle_focus_task_id: Option<i64>,
     pub paused_at: Option<DateTime<Utc>>,
     pub paused_seconds_total: i64,
+    pub cleared: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,6 +123,14 @@ pub fn init(app_data_dir: PathBuf) -> Connection {
     )
     .ok();
 
+    // Migration: "Clear" on the Done list hides finished rows without deleting
+    // them — stats (today's total, streaks) are computed from completed tasks.
+    conn.execute(
+        "ALTER TABLE tasks ADD COLUMN cleared INTEGER NOT NULL DEFAULT 0",
+        [],
+    )
+    .ok();
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS focus_tasks (
             id                 INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -198,6 +207,7 @@ pub fn row_to_task(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         cycle_focus_task_id: row.get(15)?,
         paused_at: row.get(16)?,
         paused_seconds_total: row.get(17)?,
+        cleared: row.get::<_, i64>(18)? != 0,
     })
 }
 
@@ -240,7 +250,7 @@ pub fn row_to_custom_preset(row: &rusqlite::Row) -> rusqlite::Result<CustomPrese
 pub const SELECT_COLUMNS: &str = "id, title, scheduled_start, duration_minutes, status, created_at, focus_task_id, \
      is_break, cycle_preset, cycle_work_minutes, cycle_break_minutes, cycle_long_break_minutes, \
      cycle_rounds_before_long_break, cycle_round, cycle_base_title, cycle_focus_task_id, \
-     paused_at, paused_seconds_total";
+     paused_at, paused_seconds_total, cleared";
 
 /// A paused work session still counts as "blocking should be on" — stepping away
 /// mid-session must not reopen blocked sites.
